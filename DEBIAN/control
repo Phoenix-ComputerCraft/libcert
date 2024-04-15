@@ -1,0 +1,14 @@
+Package: libcert
+Version: 1.0-1
+Section: libraries
+Priority: optional
+Architecture: phoenix
+Depends: libsystem, ccryptolib, sha2, aes
+Maintainer: JackMacWindows <jackmacwindowslinux@gmail.com>
+Description: Certificate and security library
+ Handles the storage and use of cryptographic
+ resources on the system, including certificates,
+ passwords, API keys, and encryption keys. Also
+ provides functions for validating certificate
+ roots, verifying signatures, and encryption of
+ data using certificates.
