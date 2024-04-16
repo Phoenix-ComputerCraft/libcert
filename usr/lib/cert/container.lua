@@ -217,6 +217,7 @@ local algorithm_list = {
     [container.signatureAlgorithmOIDs.ECDSA_SHA3_384] = {},
     [container.signatureAlgorithmOIDs.ECDSA_SHA3_512] = {},
     [container.signatureAlgorithmOIDs.ED25519] = {},
+    [container.publicKeyAlgorithmOIDs.X25519] = {},
     [container.digestAlgorithmOIDs.SHA1] = {},
     [container.digestAlgorithmOIDs.SHA224] = {},
     [container.digestAlgorithmOIDs.SHA256] = {},
@@ -401,6 +402,109 @@ local CertificateList = Signed(CertificateListContent)
 ---@alias X509 Certificate
 ---@alias X509CRL CertificateList
 
+-- PKCS#9 --
+
+container.pkcs9AttributeOIDs = {
+    emailAddress = "1.2.840.113549.1.9.1",
+    unstructuredName = "1.2.840.113549.1.9.2",
+    contentType = "1.2.840.113549.1.9.3",
+    messageDigest = "1.2.840.113549.1.9.4",
+    signingTime = "1.2.840.113549.1.9.5",
+    countersignature = "1.2.840.113549.1.9.6",
+    challengePassword = "1.2.840.113549.1.9.7",
+    unstructuredAddress = "1.2.840.113549.1.9.8",
+    extendedCertificateAttributes = "1.2.840.113549.1.9.9",
+    signingDescription = "1.2.840.113549.1.9.13",
+    extensionRequest = "1.2.840.113549.1.9.14",
+    smimeCapabilities = "1.2.840.113549.1.9.15",
+    friendlyName = "1.2.840.113549.1.9.20",
+    localKeyId = "1.2.840.113549.1.9.21",
+    userPKCS12 = "2.16.840.1.113730.3.1.216",
+    pkcs15Token = "1.2.840.113549.1.9.25.1",
+    encryptedPrivateKeyInfo = "1.2.840.113549.1.9.25.2",
+    randomNonce = "1.2.840.113549.1.9.25.3",
+    sequenceNumber = "1.2.840.113549.1.9.25.4",
+    pkcs7PDU = "1.2.840.113549.1.9.25.5",
+    dateOfBirth = "1.3.6.1.5.5.7.9.1",
+    placeOfBirth = "1.3.6.1.5.5.7.9.2",
+    gender = "1.3.6.1.5.5.7.9.3",
+    countryOfCitizenship = "1.3.6.1.5.5.7.9.4",
+    countryOfResidence = "1.3.6.1.5.5.7.9.5",
+    pseudonym = "2.5.4.65",
+}
+
+---@class PKCS9String
+---@field ia5string string|nil
+---@field directoryString UnboundedDirectoryString|nil
+
+local PKCS9String = asn1.choice {
+    {"ia5string", asn1.ia5string},
+    {"directoryString", UnboundedDirectoryString}
+}
+
+local PKCS9AttributeList = {
+    [container.pkcs9AttributeOIDs.emailAddress] = {{"values", asn1.set {{"emailAddress", asn1.ia5string}}}},
+    [container.pkcs9AttributeOIDs.unstructuredName] = {{"values", asn1.set {{"unstructuredName", PKCS9String}}}},
+    [container.pkcs9AttributeOIDs.unstructuredAddress] = {{"values", asn1.set {{"unstructuredAddress", UnboundedDirectoryString}}}},
+    [container.pkcs9AttributeOIDs.dateOfBirth] = {{"values", asn1.set {{"dateOfBirth", asn1.generalized_time}}}},
+    [container.pkcs9AttributeOIDs.placeOfBirth] = {{"values", asn1.set {{"placeOfBirth", UnboundedDirectoryString}}}},
+    [container.pkcs9AttributeOIDs.gender] = {{"values", asn1.set {{"gender", asn1.printable_string}}}},
+    [container.pkcs9AttributeOIDs.countryOfCitizenship] = {{"values", asn1.set {{"countryOfCitizenship", asn1.printable_string}}}},
+    [container.pkcs9AttributeOIDs.countryOfResidence] = {{"values", asn1.set {{"countryOfResidence", asn1.printable_string}}}},
+    [container.pkcs9AttributeOIDs.pseudonym] = {{"values", asn1.set {{"pseudonym", UnboundedDirectoryString}}}},
+    [container.pkcs9AttributeOIDs.contentType] = {{"values", asn1.set {{"contentType", asn1.oid}}}},
+    [container.pkcs9AttributeOIDs.messageDigest] = {{"values", asn1.set {{"messageDigest", asn1.octet_string}}}},
+    [container.pkcs9AttributeOIDs.signingTime] = {{"values", asn1.set {{"signingTime", Time}}}},
+    [container.pkcs9AttributeOIDs.randomNonce] = {{"values", asn1.set {{"randomNonce", asn1.octet_string}}}},
+    [container.pkcs9AttributeOIDs.sequenceNumber] = {{"values", asn1.set {{"sequenceNumber", asn1.integer}}}},
+    [container.pkcs9AttributeOIDs.challengePassword] = {{"values", asn1.set {{"challengePassword", UnboundedDirectoryString}}}},
+    [container.pkcs9AttributeOIDs.extensionRequest] = {{"values", asn1.set {{"extensionRequest", asn1.sequence_of(Extension)}}}},
+    [container.pkcs9AttributeOIDs.friendlyName] = {{"values", asn1.set {{"friendlyName", asn1.bmp_string}}}},
+    [container.pkcs9AttributeOIDs.localKeyId] = {{"values", asn1.set {{"localKeyId", asn1.octet_string}}}},
+    [container.pkcs9AttributeOIDs.signingDescription] = {{"values", asn1.set {{"signingDescription", UnboundedDirectoryString}}}},
+    [container.pkcs9AttributeOIDs.smimeCapabilities] = {{"values", asn1.set {{"smimeCapabilities", asn1.sequence_of(AlgorithmIdentifier)}}}},
+}
+
+---@class Attribute
+---@field type ObjectIdentifier
+---@field values any
+
+---@class ContentTypeAttribute: Attribute
+---@field values {contentType: ObjectIdentifier}
+
+---@class MessageDigestAttribute: Attribute
+---@field values {messageDigest: string}
+
+---@class SigningTimeAttribute: Attribute
+---@field values {signingTime: Time}
+
+---@class CountersignatureAttribute: Attribute
+---@field values {countersignature: SignerInfo}
+
+local Attribute = asn1.class(PKCS9AttributeList)
+
+PKCS9AttributeList[container.pkcs9AttributeOIDs.extendedCertificateAttributes] = {{"values", asn1.set {{"extendedCertificateAttributes", asn1.set_of(Attribute)}}}}
+
+-- PKCS#10 --
+
+---@class CertificationRequestInfo
+---@field version number
+---@field subject Name
+---@field subjectPKInfo SubjectPublicKeyInfo
+---@field attributes Attribute[]
+
+local CertificationRequestInfo = asn1.sequence {
+    {"version", asn1.integer},
+    {"subject", Name},
+    {"subjectPKInfo", SubjectPublicKeyInfo},
+    {"attributes", asn1.explicit(0, asn1.set_of(Attribute))}
+}
+
+---@alias CertificationRequest Signed<CertificationRequestInfo>
+local CertificationRequest = Signed(CertificationRequestInfo)
+
+---@alias PKCS10 CertificationRequest
+
 -- PKCS#8 --
 
 ---@class EncryptedPrivateKeyInfo
@@ -412,14 +516,7 @@ local EncryptedPrivateKeyInfo = asn1.sequence {
     {"encryptedData", asn1.octet_string}
 }
 
----@class Attribute
----@field type ObjectIdentifier
----@field value any
-
-local Attribute = asn1.sequence {
-    {"type", asn1.oid},
-    {"value", asn1.any}
-}
+PKCS9AttributeList[container.pkcs9AttributeOIDs.encryptedPrivateKeyInfo] = {{"values", asn1.set {{"encryptedPrivateKeyInfo", EncryptedPrivateKeyInfo}}}}
 
 ---@class PrivateKeyInfo
 ---@field version number
@@ -447,13 +544,6 @@ container.pkcs7ContentTypeOIDs = {
     encryptedData = "1.2.840.113549.1.7.6",
     authData = "1.2.840.113549.1.9.16.1.2",
     authEnvelopedData = "1.2.840.113549.1.9.16.1.23",
-}
-
-container.pkcs7AttributeOIDs = {
-    contentType = "1.2.840.113549.1.9.3",
-    messageDigest = "1.2.840.113549.1.9.4",
-    signingTime = "1.2.840.113549.1.9.5",
-    countersignature = "1.2.840.113549.1.9.6",
 }
 
 --- Signed data
@@ -485,51 +575,26 @@ local SignerIdentifier = asn1.choice {
     {"subjectKeyIdentifier", asn1.explicit(0, asn1.octet_string)}
 }
 
-local SignerInfo, PKCS7Attribute do
-    local t = {
-        [container.pkcs7AttributeOIDs.contentType] = {{"values", asn1.set {{"contentType", asn1.oid}}}},
-        [container.pkcs7AttributeOIDs.messageDigest] = {{"values", asn1.set {{"messageDigest", asn1.octet_string}}}},
-        [container.pkcs7AttributeOIDs.signingTime] = {{"values", asn1.set {{"signingTime", Time}}}}
-    }
-    ---@class PKCS7Attribute
-    ---@field type ObjectIdentifier
-    ---@field values any[]
+---@class SignerInfo
+---@field version number
+---@field sid SignerIdentifier
+---@field digestAlgorithm AlgorithmIdentifier
+---@field signedAttrs Attribute[]|nil
+---@field signatureAlgorithm AlgorithmIdentifier
+---@field signature string
+---@field unsignedAttrs Attribute[]|nil
 
-    PKCS7Attribute = asn1.class(t)
+local SignerInfo = asn1.sequence {
+    {"version", asn1.integer},
+    {"sid", SignerIdentifier},
+    {"digestAlgorithm", AlgorithmIdentifier},
+    {"signedAttrs", asn1.optional(asn1.implicit(0, asn1.set_of(Attribute)))},
+    {"signatureAlgorithm", AlgorithmIdentifier},
+    {"signature", asn1.octet_string},
+    {"unsignedAttrs", asn1.optional(asn1.implicit(1, asn1.set_of(Attribute)))}
+}
 
-    ---@class PKCS7ContentTypeAttribute: PKCS7Attribute
-    ---@field values {contentType: ObjectIdentifier}
-
-    ---@class PKCS7MessageDigestAttribute: PKCS7Attribute
-    ---@field values {messageDigest: string}
-
-    ---@class PKCS7SigningTimeAttribute: PKCS7Attribute
-    ---@field values {signingTime: Time}
-
-    ---@class PKCS7CountersignatureAttribute: PKCS7Attribute
-    ---@field values {countersignature: SignerInfo}
-
-    ---@class SignerInfo
-    ---@field version number
-    ---@field sid SignerIdentifier
-    ---@field digestAlgorithm AlgorithmIdentifier
-    ---@field signedAttrs PKCS7Attribute[]|nil
-    ---@field signatureAlgorithm AlgorithmIdentifier
-    ---@field signature string
-    ---@field unsignedAttrs PKCS7Attribute[]|nil
-
-    SignerInfo = asn1.sequence {
-        {"version", asn1.integer},
-        {"sid", SignerIdentifier},
-        {"digestAlgorithm", AlgorithmIdentifier},
-        {"signedAttrs", asn1.optional(asn1.implicit(0, asn1.set_of(PKCS7Attribute)))},
-        {"signatureAlgorithm", AlgorithmIdentifier},
-        {"signature", asn1.octet_string},
-        {"unsignedAttrs", asn1.optional(asn1.implicit(1, asn1.set_of(PKCS7Attribute)))}
-    }
-
-    t[container.pkcs7AttributeOIDs.countersignature] = {{"countersignature", SignerInfo}}
-end
+PKCS9AttributeList[container.pkcs9AttributeOIDs.countersignature] = {{"countersignature", SignerInfo}}
 
 ---@class SignedData
 ---@field version number
@@ -629,7 +694,7 @@ local RecipientEncryptedKey = asn1.sequence {
 ---@field originator OriginatorIdentifierOrKey
 ---@field ukm string|nil
 ---@field keyEncryptionAlgorithm AlgorithmIdentifier
----@field recipientEncryptedKey RecipientEncryptedKey[]
+---@field recipientEncryptedKeys RecipientEncryptedKey[]
 
 local KeyAgreeRecipientInfo = asn1.sequence {
     {"version", asn1.integer},
@@ -705,14 +770,14 @@ local EncryptedContentInfo = asn1.sequence {
 ---@field originatorInfo OriginatorInfo|nil
 ---@field recipientInfos RecipientInfo[]
 ---@field encryptedContentInfo EncryptedContentInfo
----@field unprotectedAttrs PKCS7Attribute[]|nil
+---@field unprotectedAttrs Attribute[]|nil
 
 local EnvelopedData = asn1.sequence {
     {"version", asn1.integer},
     {"originatorInfo", asn1.optional(asn1.implicit(0, OriginatorInfo))},
     {"recipientInfos", asn1.set_of(RecipientInfo)},
     {"encryptedContentInfo", EncryptedContentInfo},
-    {"unprotectedAttrs", asn1.optional(asn1.explicit(1, asn1.set_of(PKCS7Attribute)))}
+    {"unprotectedAttrs", asn1.optional(asn1.explicit(1, asn1.set_of(Attribute)))}
 }
 
 --- Digested data
@@ -735,12 +800,12 @@ local DigestedData = asn1.sequence {
 ---@class EncryptedData
 ---@field version number
 ---@field encryptedContentInfo EncryptedContentInfo
----@field unprotectedAttrs PKCS7Attribute[]|nil
+---@field unprotectedAttrs Attribute[]|nil
 
 local EncryptedData = asn1.sequence {
     {"version", asn1.integer},
     {"encryptedContentInfo", EncryptedContentInfo},
-    {"unprotectedAttrs", asn1.optional(asn1.implicit(1, asn1.set_of(PKCS7Attribute)))}
+    {"unprotectedAttrs", asn1.optional(asn1.implicit(1, asn1.set_of(Attribute)))}
 }
 
 --- Authenticated data
@@ -752,9 +817,9 @@ local EncryptedData = asn1.sequence {
 ---@field macAlgorithm AlgorithmIdentifier
 ---@field digestAlgorithm AlgorithmIdentifier|nil
 ---@field encapContentInfo EncapsulatedContentInfo
----@field authAttrs PKCS7Attribute[]|nil
+---@field authAttrs Attribute[]|nil
 ---@field mac string
----@field unauthAttrs PKCS7Attribute[]|nil
+---@field unauthAttrs Attribute[]|nil
 
 local AuthenticatedData = asn1.sequence {
     {"version", asn1.integer},
@@ -763,9 +828,9 @@ local AuthenticatedData = asn1.sequence {
     {"macAlgorithm", AlgorithmIdentifier},
     {"digestAlgorithm", asn1.optional(asn1.explicit(1, AlgorithmIdentifier))},
     {"encapContentInfo", EncapsulatedContentInfo},
-    {"authAttrs", asn1.optional(asn1.implicit(2, asn1.set_of(PKCS7Attribute)))},
+    {"authAttrs", asn1.optional(asn1.implicit(2, asn1.set_of(Attribute)))},
     {"mac", asn1.octet_string},
-    {"unauthAttrs", asn1.optional(asn1.implicit(3, asn1.set_of(PKCS7Attribute)))}
+    {"unauthAttrs", asn1.optional(asn1.implicit(3, asn1.set_of(Attribute)))}
 }
 
 --- Authenticated + encrypted data
@@ -775,18 +840,18 @@ local AuthenticatedData = asn1.sequence {
 ---@field originatorInfo OriginatorInfo|nil
 ---@field recipientInfos RecipientInfo[]
 ---@field authEncryptedContentInfo EncryptedContentInfo
----@field authAttrs PKCS7Attribute[]|nil
+---@field authAttrs Attribute[]|nil
 ---@field mac string
----@field unauthAttrs PKCS7Attribute[]|nil
+---@field unauthAttrs Attribute[]|nil
 
 local AuthEnvelopedData = asn1.sequence {
     {"version", asn1.integer},
     {"originatorInfo", asn1.optional(asn1.implicit(0, OriginatorInfo))},
     {"recipientInfos", asn1.set_of(RecipientInfo)},
     {"authEncryptedContentInfo", EncryptedContentInfo},
-    {"authAttrs", asn1.optional(asn1.implicit(2, asn1.set_of(PKCS7Attribute)))},
+    {"authAttrs", asn1.optional(asn1.implicit(2, asn1.set_of(Attribute)))},
     {"mac", asn1.octet_string},
-    {"unauthAttrs", asn1.optional(asn1.implicit(3, asn1.set_of(PKCS7Attribute)))}
+    {"unauthAttrs", asn1.optional(asn1.implicit(3, asn1.set_of(Attribute)))}
 }
 
 ---@class ContentInfo
@@ -801,6 +866,8 @@ local ContentInfo = asn1.class {
     [container.pkcs7ContentTypeOIDs.authData] = {{"content", asn1.explicit(0, AuthenticatedData)}},
     [container.pkcs7ContentTypeOIDs.authEnvelopedData] = {{"content", asn1.explicit(0, AuthEnvelopedData)}},
 }
+
+PKCS9AttributeList[container.pkcs9AttributeOIDs.pkcs7PDU] = {{"values", asn1.set {{"contentInfo", ContentInfo}}}}
 
 ---@class PKCS7Data: ContentInfo
 ---@field content string
@@ -904,6 +971,13 @@ function container.loadPKCS8Encrypted(data)
     return EncryptedPrivateKeyInfo.decode(data)
 end
 
+--- Loads a PKCS#10 CSR file from DER.
+---@param data string The DER to load
+---@return PKCS10 pk10 The loaded PKCS#10 structure
+function container.loadPKCS10(data)
+    return CertificationRequest.decode(data)
+end
+
 function container.loadPKCS12(data)
 
 end
@@ -924,16 +998,24 @@ function container.savePKCS7(pk7)
 end
 
 --- Encodes a list of PKCS#7 attributes for use in a signature.
----@param attrs PKCS7Attribute[] The attributes to encode
+---@param attrs Attribute[] The attributes to encode
 ---@return string der The DER encoded form of the attributes
 function container.encodePKCS7SignedAttrs(attrs)
-    return asn1.set_of(PKCS7Attribute).encode(attrs)
+    return asn1.set_of(Attribute).encode(attrs)
 end
 
 --- Encodes a PKCS#8 structure to DER.
 ---@param pk8 PKCS8 The structure to encode
 ---@return string der The DER representation
 function container.savePKCS8(pk8)
+    if (pk8.privateKeyAlgorithm.type.string or pk8.privateKeyAlgorithm.type) == container.publicKeyAlgorithmOIDs.ED25519 then
+        return PrivateKeyInfo.encode {
+            version = pk8.version,
+            privateKeyAlgorithm = pk8.privateKeyAlgorithm,
+            privateKey = asn1.octet_string.encode(pk8.privateKey),
+            attributes = pk8.attributes
+        }
+    end
     return PrivateKeyInfo.encode(pk8)
 end
 
@@ -942,6 +1024,20 @@ end
 ---@return string der The DER representation
 function container.savePKCS8Encrypted(pk8)
     return EncryptedPrivateKeyInfo.encode(pk8)
+end
+
+--- Encodes the inner info of a PKCS#10 CSR structure to DER, for use in signing.
+---@param pk10 PKCS10 The structure to encode
+---@return string der The DER representation of the inner info
+function container.encodePKCS10InnerInfo(pk10)
+    return CertificationRequestInfo.encode(pk10.toBeSigned)
+end
+
+--- Encodes a PKCS#10 CSR structure to DER.
+---@param pk10 PKCS10 The structure to encode
+---@return string der The DER representation
+function container.savePKCS10(pk10)
+    return CertificationRequest.encode(pk10)
 end
 
 function container.savePKCS12(pk12)

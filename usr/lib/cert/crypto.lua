@@ -11,43 +11,43 @@ local crypto = {}
 
 ---@alias KeyEncryptor {encrypt: (fun(key: string): RecipientInfo), decrypt: (fun(enc: RecipientInfo): string|nil)}
 
---- Creates an exchanged key encryptor using an originator key/certificate pair and recipient certificate.
----@param pk8 PKCS8 The private key of the originator
----@param myCert X509 The certificate of the originator
----@param theirCert X509 The certificate of the receiver
+--- Creates an exchanged key encryptor using an originator certificate and recipient certificate, plus local key.
+---@param pk8 PKCS8 The local private key for the originator or receiver
+---@param origCert X509 The certificate of the originator
+---@param recvCert X509 The certificate of the receiver
 ---@return KeyEncryptor encryptor The created key encryptor
-function crypto.exchangedKey(pk8, myCert, theirCert)
+function crypto.exchangedKey(pk8, origCert, recvCert)
     local skt = pk8.privateKeyAlgorithm.type.string or pk8.privateKeyAlgorithm.type
-    local sct = myCert.toBeSigned.subjectPublicKeyInfo.algorithm.type.string or myCert.toBeSigned.subjectPublicKeyInfo.algorithm.type
-    local pct = theirCert.toBeSigned.subjectPublicKeyInfo.algorithm.type.string or theirCert.toBeSigned.subjectPublicKeyInfo.algorithm.type
+    local sct = origCert.toBeSigned.subjectPublicKeyInfo.algorithm.type.string or origCert.toBeSigned.subjectPublicKeyInfo.algorithm.type
+    local pct = recvCert.toBeSigned.subjectPublicKeyInfo.algorithm.type.string or recvCert.toBeSigned.subjectPublicKeyInfo.algorithm.type
     assert(skt == container.publicKeyAlgorithmOIDs.ED25519 or skt == container.publicKeyAlgorithmOIDs.X25519, "Unsupported originator private key type")
-    assert(sct == container.publicKeyAlgorithmOIDs.ED25519 or sct == container.publicKeyAlgorithmOIDs.X25519, "Unsupported originator public key type")
-    assert(pct == container.publicKeyAlgorithmOIDs.ED25519 or pct == container.publicKeyAlgorithmOIDs.X25519, "Unsupported receiver public key type")
-    local exchKey = x25519.exchange(pk8.privateKey, theirCert.toBeSigned.subjectPublicKeyInfo.subjectPublicKey.data)
+    assert(sct == container.publicKeyAlgorithmOIDs.X25519, "Unsupported originator public key type")
+    assert(pct == container.publicKeyAlgorithmOIDs.X25519, "Unsupported receiver public key type")
     return {
         encrypt = function(key)
             local iv = random.random(16)
+            local exchKey = x25519.exchange(pk8.privateKey, recvCert.toBeSigned.subjectPublicKeyInfo.subjectPublicKey.data)
             ---@type RecipientInfo
             local ri = {
                 kari = {
                     version = 3,
                     originator = {
                         issuerAndSerialNumber = {
-                            issuer = myCert.toBeSigned.issuer,
-                            serialNumber = myCert.toBeSigned.serialNumber
+                            issuer = origCert.toBeSigned.issuer,
+                            serialNumber = origCert.toBeSigned.serialNumber
                         }
                     },
                     keyEncryptionAlgorithm = {
                         type = container.encryptionAlgorithmOIDs.AES256_CBC,
                         iv = iv
                     },
-                    recipientEncryptedKey = {
+                    recipientEncryptedKeys = {
                         {
-                            encryptedKey = aes.TableToString(aes.EncryptCBC(aes.StringToTable(key), aes.StringToTable(exchKey), aes.StringToTable(iv))),
+                            encryptedKey = aes.TableToString(aes.EncryptCBC(util.pkcs7pad(aes.StringToTable(key), 16), aes.StringToTable(exchKey), aes.StringToTable(iv))),
                             rid = {
                                 issuerAndSerialNumber = {
-                                    issuer = theirCert.toBeSigned.issuer,
-                                    serialNumber = theirCert.toBeSigned.serialNumber
+                                    issuer = recvCert.toBeSigned.issuer,
+                                    serialNumber = recvCert.toBeSigned.serialNumber
                                 }
                             }
                         }
@@ -60,16 +60,17 @@ function crypto.exchangedKey(pk8, myCert, theirCert)
         decrypt = function(enc)
             if not enc.kari or enc.kari.version ~= 3 then return nil end
             if not enc.kari.originator.issuerAndSerialNumber then return nil end
-            if not util.compareNames(enc.kari.originator.issuerAndSerialNumber.issuer, theirCert.toBeSigned.issuer) then return nil end
-            if enc.kari.originator.issuerAndSerialNumber.serialNumber.data ~= theirCert.toBeSigned.serialNumber.data then return nil end
+            if not util.compareNames(enc.kari.originator.issuerAndSerialNumber.issuer, origCert.toBeSigned.issuer) then return nil end
+            if enc.kari.originator.issuerAndSerialNumber.serialNumber ~= origCert.toBeSigned.serialNumber then return nil end
             local kt = enc.kari.keyEncryptionAlgorithm.type.string or enc.kari.keyEncryptionAlgorithm.type
             if kt ~= container.encryptionAlgorithmOIDs.AES128_CBC and kt ~= container.encryptionAlgorithmOIDs.AES192_CBC and kt ~= container.encryptionAlgorithmOIDs.AES256_CBC then return nil end
-            for _, v in ipairs(enc.kari.recipientEncryptedKey) do
+            for _, v in ipairs(enc.kari.recipientEncryptedKeys) do
                 if v.rid.issuerAndSerialNumber and
-                    util.compareNames(v.rid.issuerAndSerialNumber.issuer, myCert.toBeSigned.issuer) and
-                    v.rid.issuerAndSerialNumber.serialNumber.data == myCert.toBeSigned.serialNumber.data then
-                    local ok, res = pcall(aes.DecryptCBC, aes.StringToTable(v.encryptedKey), aes.StringToTable(enc.kari.keyEncryptionAlgorithm.iv))
-                    if ok and res then return aes.TableToString(res) end
+                    util.compareNames(v.rid.issuerAndSerialNumber.issuer, recvCert.toBeSigned.issuer) and
+                    v.rid.issuerAndSerialNumber.serialNumber == recvCert.toBeSigned.serialNumber then
+                    local exchKey = x25519.exchange(pk8.privateKey, origCert.toBeSigned.subjectPublicKeyInfo.subjectPublicKey.data)
+                    local ok, res = pcall(aes.DecryptCBC, aes.StringToTable(v.encryptedKey), aes.StringToTable(exchKey), aes.StringToTable(enc.kari.keyEncryptionAlgorithm.iv))
+                    if ok and res and res[#res] > 0 and res[#res] < 17 then return aes.TableToString(util.pkcs7unpad(res)) end
                 end
             end
             return nil
@@ -101,7 +102,7 @@ function crypto.sharedKey(psk, id)
                         type = pkt,
                         iv = iv
                     },
-                    encryptedKey = aes.TableToString(aes.EncryptCBC(aes.StringToTable(key), aes.StringToTable(psk), aes.StringToTable(iv)))
+                    encryptedKey = aes.TableToString(aes.EncryptCBC(util.pkcs7pad(aes.StringToTable(key), 16), aes.StringToTable(psk), aes.StringToTable(iv)))
                 }
             }
             return ri
@@ -113,7 +114,7 @@ function crypto.sharedKey(psk, id)
             local kt = enc.kekri.keyEncryptionAlgorithm.type.string or enc.kekri.keyEncryptionAlgorithm.type
             if kt ~= pkt then return nil end
             local ok, res = pcall(aes.DecryptCBC, aes.StringToTable(enc.kekri.encryptedKey), aes.StringToTable(psk), aes.StringToTable(enc.kekri.keyEncryptionAlgorithm.iv))
-            if ok and res then return aes.TableToString(res) end
+            if ok and res and res[#res] > 0 and res[#res] < 17 then return aes.TableToString(util.pkcs7unpad(res)) end
             return nil
         end
     }
@@ -172,7 +173,7 @@ function crypto.passwordKey(password, hasher, iter)
                 }
             }
             local pk = util.pbkdf2(function(d, k) return {sha2.hmac(hasher, k, string.char(table.unpack(d))):byte(1, -1)} end, hl, password, ri.pwri.keyDerivationAlgorithm.pbkdf2Parameters.salt.specified, iter or 4096, 32)
-            ri.pwri.encryptedKey = aes.TableToString(aes.EncryptCBC(aes.StringToTable(key), aes.StringToTable(pk), aes.StringToTable(ri.pwri.keyEncryptionAlgorithm.iv)))
+            ri.pwri.encryptedKey = aes.TableToString(aes.EncryptCBC(util.pkcs7pad(aes.StringToTable(key), 16), aes.StringToTable(pk), aes.StringToTable(ri.pwri.keyEncryptionAlgorithm.iv)))
             return ri
         end,
         ---@param enc RecipientInfo
@@ -190,7 +191,7 @@ function crypto.passwordKey(password, hasher, iter)
             else return nil end
             local pk = util.pbkdf2(function(d, k) return {sha2.hmac(hasher, k, string.char(table.unpack(d))):byte(1, -1)} end, hl, password, enc.pwri.keyDerivationAlgorithm.pbkdf2Parameters.salt.specified, enc.pwri.keyDerivationAlgorithm.pbkdf2Parameters.iterationCount, kl)
             local ok, res = pcall(aes.DecryptCBC, aes.StringToTable(enc.pwri.encryptedKey), aes.StringToTable(pk), aes.StringToTable(enc.pwri.keyEncryptionAlgorithm.iv))
-            if ok and res then return aes.TableToString(res) end
+            if ok and res and res[#res] > 0 and res[#res] < 17 then return aes.TableToString(util.pkcs7unpad(res)) end
             return nil
         end
     }
@@ -310,7 +311,7 @@ function crypto.encryptKey(pk8, password, hasher, iter)
         hl = 32
     else error("Unknown hashing algorithm", 2) end
     local key = util.pbkdf2(function(d, k) return {sha2.hmac(hasher, k, string.char(table.unpack(d))):byte(1, -1)} end, hl, password, pk8e.encryptionAlgorithm.pbes2Parameters.keyDerivationFunc.pbkdf2Parameters.salt.specified, iter or 4096, 32)
-    pk8e.encryptedData = aes.TableToString(aes.EncryptCBC(aes.StringToTable(data), aes.StringToTable(key), aes.StringToTable(pk8e.encryptionAlgorithm.pbes2Parameters.encryptionScheme.iv)))
+    pk8e.encryptedData = aes.TableToString(aes.EncryptCBC(util.pkcs7pad(aes.StringToTable(data), 16), aes.StringToTable(key), aes.StringToTable(pk8e.encryptionAlgorithm.pbes2Parameters.encryptionScheme.iv)))
     return pk8e
 end
 
@@ -350,8 +351,8 @@ function crypto.decryptKey(pk8e, password)
     elseif et == container.encryptionAlgorithmOIDs.AES192_CBC then kl = 24
     elseif et == container.encryptionAlgorithmOIDs.AES256_CBC then kl = 32
     else error("Unknown encryption algorithm", 2) end
-    local key = util.pbkdf2(function(d, k) return {sha2.hmac(hasher, k, string.char(table.unpack(d))):byte(1, -1)} end, hl, password, pk8e.encryptionAlgorithm.pbes2Parameters.keyDerivationFunc.pbkdf2Parameters.salt.specified, pk8e.encryptionAlgorithm.pbes2Parameters.keyDerivationFunc.pbkdf2Parameters.iterationCount, 32)
-    return aes.TableToString(aes.DecryptCBC(aes.StringToTable(pk8e.encryptedData), aes.StringToTable(key), aes.StringToTable(pk8e.encryptionAlgorithm.pbes2Parameters.encryptionScheme.iv)))
+    local key = util.pbkdf2(function(d, k) return {sha2.hmac(hasher, k, string.char(table.unpack(d))):byte(1, -1)} end, hl, password, pk8e.encryptionAlgorithm.pbes2Parameters.keyDerivationFunc.pbkdf2Parameters.salt.specified, pk8e.encryptionAlgorithm.pbes2Parameters.keyDerivationFunc.pbkdf2Parameters.iterationCount, kl)
+    return container.loadPKCS8(aes.TableToString(util.pkcs7unpad(aes.DecryptCBC(aes.StringToTable(pk8e.encryptedData), aes.StringToTable(key), aes.StringToTable(pk8e.encryptionAlgorithm.pbes2Parameters.encryptionScheme.iv)))))
 end
 
 return crypto

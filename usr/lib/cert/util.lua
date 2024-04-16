@@ -31,7 +31,7 @@ end
 -- From https://pastebin.com/6UV4qfNF - MIT
 
 --- PBKDF2 key derivation
----@param hmac fun(data: number[], key: string): string
+---@param hmac fun(data: number[], key: string): number[]
 ---@param hashlen number
 ---@param pass string
 ---@param salt string|number[]
@@ -64,6 +64,23 @@ function util.pbkdf2(hmac, hashlen, pass, salt, iter, dklen)
     end
 
     return string.char(upack(out))
+end
+
+---@param data number[]
+---@param blocksize number
+---@return number[] data
+function util.pkcs7pad(data, blocksize)
+    local left = blocksize - (#data % blocksize)
+    for _ = 1, left do data[#data+1] = left end
+    return data
+end
+
+---@param data number[]
+---@return number[] data
+function util.pkcs7unpad(data)
+    local left = data[#data]
+    for _ = 1, left do data[#data] = nil end
+    return data
 end
 
 return util
