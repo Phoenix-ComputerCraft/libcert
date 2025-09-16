@@ -22,22 +22,22 @@ function signature.sign(cert, key, data, additionalCerts)
     assert(cert.toBeSigned.subjectPublicKeyInfo.algorithm.type.string == container.signatureAlgorithmOIDs.ED25519, "Certificate must be Ed25519")
     local now = os.date("!*t")
     now.type = "UTCTime"
-    ---@type PKCS7Attribute[]
+    ---@type Attribute[]
     local attrs = {
         {
-            type = container.pkcs7AttributeOIDs.contentType,
+            type = container.pkcs9AttributeOIDs.contentType,
             values = {
                 contentType = ct
             }
         },
         {
-            type = container.pkcs7AttributeOIDs.messageDigest,
+            type = container.pkcs9AttributeOIDs.messageDigest,
             values = {
                 messageDigest = sha2.hex_to_bin(sha2.sha3_512(data))
             }
         },
         {
-            type = container.pkcs7AttributeOIDs.signingTime,
+            type = container.pkcs9AttributeOIDs.signingTime,
             values = {
                 signingTime = {
                     utcTime = now
@@ -119,7 +119,7 @@ function signature.verify(pk7, data, index)
     local attrblock = container.encodePKCS7SignedAttrs(pk7.content.signerInfos[index].signedAttrs)
     if not ed25519.verify(cert.toBeSigned.subjectPublicKeyInfo.subjectPublicKey.data, attrblock, pk7.content.signerInfos[index].signature) then return false, "Failed to validate signature" end
     local sig
-    for _, v in ipairs(pk7.content.signerInfos[index].signedAttrs) do if v.type.string == container.pkcs7AttributeOIDs.messageDigest then sig = v.values.messageDigest break end end
+    for _, v in ipairs(pk7.content.signerInfos[index].signedAttrs) do if v.type.string == container.pkcs9AttributeOIDs.messageDigest then sig = v.values.messageDigest break end end
     if sha2.hex_to_bin(sha2.sha3_512(data)) ~= sig then return false, "Failed to validate digest" end
     return true
 end

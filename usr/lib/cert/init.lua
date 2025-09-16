@@ -218,17 +218,26 @@ end
 ---@param key PKCS8|string The PEM-encoded private key for the certificate
 ---@param data string The data to sign
 ---@param additionalCerts? string[] Any additional certificates needed to verify the signature (e.g. CA certificates)
+---@param password? string The password for the key, if required
 ---@return string sig The generated signature, PEM-encoded
-function libcert.sign(cert, key, data, additionalCerts)
+function libcert.sign(cert, key, data, additionalCerts, password)
     expect(1, cert, "string", "table")
     expect(2, key, "string", "table")
     expect(3, data, "string")
     expect(4, additionalCerts, "table", "nil")
+    expect(5, password, "string", "nil")
     if additionalCerts then
         for i, v in ipairs(additionalCerts) do additionalCerts[i] = container.loadX509(container.decodePEM(v)) end
     end
     if type(cert) == "string" then cert = container.loadX509(container.decodePEM(cert)) end
-    if type(key) == "string" then key = container.loadPKCS8(container.decodePEM(key)) end
+    if type(key) == "string" then
+        local pk8, typ = container.decodePEM(key)
+        if typ == "ENCRYPTED PRIVATE KEY" then
+            if not password then error("Private key is encrypted, but no password was provided", 2) end
+            pk8 = crypto.decryptKey(container.loadPKCS8Encrypted(pk8), password)
+        else pk8 = container.loadPKCS8(pk8) end
+        key = pk8
+    end
     return container.encodePEM(container.savePKCS7(signature.sign(cert, key, data, additionalCerts)), "PKCS7")
 end
 

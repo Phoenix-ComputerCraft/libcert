@@ -1,5 +1,5 @@
 Package: libcert
-Version: 1.0-1
+Version: 1.0.1-1
 Section: libraries
 Priority: optional
 Architecture: phoenix
