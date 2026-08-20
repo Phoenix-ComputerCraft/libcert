@@ -219,8 +219,9 @@ end
 ---@param data string The data to sign
 ---@param additionalCerts? string[] Any additional certificates needed to verify the signature (e.g. CA certificates)
 ---@param password? string The password for the key, if required
+---@param embedData? boolean Whether to embed the signed data in the signature (defaults to false)
 ---@return string sig The generated signature, PEM-encoded
-function libcert.sign(cert, key, data, additionalCerts, password)
+function libcert.sign(cert, key, data, additionalCerts, password, embedData)
     expect(1, cert, "string", "table")
     expect(2, key, "string", "table")
     expect(3, data, "string")
@@ -238,32 +239,33 @@ function libcert.sign(cert, key, data, additionalCerts, password)
         else pk8 = container.loadPKCS8(pk8) end
         key = pk8
     end
-    return container.encodePEM(container.savePKCS7(signature.sign(cert, key, data, additionalCerts)), "PKCS7")
+    return container.encodePEM(container.savePKCS7(signature.sign(cert, key, data, additionalCerts, embedData)), "PKCS7")
 end
 
 --- Verifies the signature of data using a PEM-encoded PKCS#7 signature.
 ---@param sig string|PKCS7SignedData The PEM-encoded PKCS#7 signature of the original data
----@param data string The data to check
+---@param data string|nil The data to check (may be `nil` if the data is embedded)
 ---@param validateCertificate? boolean Whether to validate the certificate's root of trust (defaults to true)
 ---@param rootPath? string The path to the root certificate store
 ---@param additionalRoots? (string|X509)[] Any additional root certificates to trust
 ---@return boolean valid Whether the signature is valid
----@return string|nil reason If not valid, a reason why it's invalid
+---@return string|table reason If not valid, a reason why it's invalid; if valid, the data that was verified
 function libcert.verify(sig, data, validateCertificate, rootPath, additionalRoots)
     if validateCertificate == nil then validateCertificate = true end
     expect(1, sig, "string", "table")
-    expect(2, data, "string")
-    expect(3, validateCertificate, "boolean")
+    expect(2, data, "string", "nil")
+    expect(3, validateCertificate, "boolean", "nil")
     expect(4, rootPath, "string", "nil")
     expect(5, additionalRoots, "table", "nil")
     if type(sig) == "string" then sig = container.loadPKCS7(container.decodePEM(sig)) end
-    local ok, err = signature.verify(sig, data)
-    if not ok then return false, err end
+    local ok, res = signature.verify(sig, data)
+    if not ok then return false, res end
     if validateCertificate then
         if additionalRoots then for i, v in ipairs(additionalRoots) do if type(v) == "string" then additionalRoots[i] = container.loadX509(container.decodePEM(v)) end end end
-        return chain.validate(signature.getCertificate(sig, 1), sig.content.certificates, rootPath, additionalRoots)
+        local ok, err = chain.validate(signature.getCertificate(sig, 1), sig.content.certificates, rootPath, additionalRoots)
+        if not ok then return false, err end
     end
-    return true
+    return true, res
 end
 
 --- Validates a certificate up to a root of trust.

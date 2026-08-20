@@ -11,8 +11,9 @@ local signature = {}
 ---@param key PKCS8 The private key for the certificate
 ---@param data string|PKCS7 The data to sign
 ---@param additionalCerts? X509[] Any additional certificates needed to verify the signature (e.g. CA certificates)
+---@param embedData? boolean Whether to embed the signed data in the signature structure (defaults to false)
 ---@return PKCS7SignedData pk7 The generated signature
-function signature.sign(cert, key, data, additionalCerts)
+function signature.sign(cert, key, data, additionalCerts, embedData)
     local ct = container.pkcs7ContentTypeOIDs.data
     if type(data) == "table" then
         ct = data.type
@@ -59,7 +60,7 @@ function signature.sign(cert, key, data, additionalCerts)
             },
             encapContentInfo = {
                 eContentType = ct,
-                eContent = nil
+                eContent = embedData and data or nil
             },
             certificates = certs,
             crls = nil,
@@ -104,16 +105,22 @@ end
 
 --- Verifies the signature of data using a PKCS#7 signature.
 ---@param pk7 PKCS7SignedData The signature of the original data
----@param data string The data to check
+---@param data string|nil The data to check (may be `nil` if the data is embedded)
 ---@param index? number The index of the signed data in the signature (defaults to 1)
 ---@return boolean valid Whether the signature is valid
----@return string|nil reason If not valid, a reason why it's invalid
+---@return string|table reasonOrData If not valid, a reason why it's invalid; if valid, the data that was verified
 function signature.verify(pk7, data, index)
     index = index or 1
     if pk7.type.string ~= container.pkcs7ContentTypeOIDs.signedData then return false, "PKCS#7 block is not signed data" end
     if pk7.content.digestAlgorithms[1].type.string ~= container.digestAlgorithmOIDs.SHA3_512 then return false, "Unsupported digest algorithm" end
     if pk7.content.signerInfos[index].digestAlgorithm.type.string ~= container.digestAlgorithmOIDs.SHA3_512 then return false, "Unsupported digest algorithm" end
     if pk7.content.signerInfos[index].signatureAlgorithm.type.string ~= container.signatureAlgorithmOIDs.ED25519 then return false, "Unsupported signature algorithm" end
+    local ct
+    if data == nil then
+        ct = pk7.content.encapContentInfo.eContentType
+        data = pk7.content.encapContentInfo.eContent
+        if data == nil then return false, "Signature does not contain embedded data" end
+    end
     local cert = signature.getCertificate(pk7, index)
     if not cert then return false, "Could not find certificate in signature" end
     local attrblock = container.encodePKCS7SignedAttrs(pk7.content.signerInfos[index].signedAttrs)
@@ -121,7 +128,8 @@ function signature.verify(pk7, data, index)
     local sig
     for _, v in ipairs(pk7.content.signerInfos[index].signedAttrs) do if v.type.string == container.pkcs9AttributeOIDs.messageDigest then sig = v.values.messageDigest break end end
     if sha2.hex_to_bin(sha2.sha3_512(data)) ~= sig then return false, "Failed to validate digest" end
-    return true
+    if ct and ct ~= container.pkcs7ContentTypeOIDs.data then data = container.loadPKCS7(data) end
+    return true, data
 end
 
 return signature
