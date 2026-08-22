@@ -137,6 +137,24 @@ container.pseudoRandomFunctionOIDs = {
     HMAC_SHA512_256 = "1.2.840.113549.2.13",
 }
 
+container.pkcs12BagTypeOIDs = {
+    keyBag = "1.2.840.113549.1.12.10.1.1",
+    pkcs8ShroudedKeyBag = "1.2.840.113549.1.12.10.1.2",
+    certBag = "1.2.840.113549.1.12.10.1.3",
+    crlBag = "1.2.840.113549.1.12.10.1.4",
+    secretBag = "1.2.840.113549.1.12.10.1.5",
+    safeContentsBag = "1.2.840.113549.1.12.10.1.6",
+}
+
+container.pkcs12CertTypeOIDs = {
+    x509Certificate = "1.2.840.113549.1.9.22.1",
+    sdsiCertificate = "1.2.840.113549.1.9.22.2"
+}
+
+container.pkcs12CRLTypeOIDs = {
+    x509Certificate = "1.2.840.113549.1.9.23.1"
+}
+
 ---@class ObjectIdentifierObj
 ---@field string string
 
@@ -207,37 +225,37 @@ local EcpkParameters = asn1.choice {
 
 local algorithm_list = {
     [container.publicKeyAlgorithmOIDs.EC_PUBLIC_KEY] = {{"ecParameters", EcpkParameters}},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA1] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA224] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA256] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA384] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA512] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA3_224] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA3_256] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA3_384] = {},
-    [container.signatureAlgorithmOIDs.ECDSA_SHA3_512] = {},
-    [container.signatureAlgorithmOIDs.ED25519] = {},
-    [container.publicKeyAlgorithmOIDs.X25519] = {},
-    [container.digestAlgorithmOIDs.SHA1] = {},
-    [container.digestAlgorithmOIDs.SHA224] = {},
-    [container.digestAlgorithmOIDs.SHA256] = {},
-    [container.digestAlgorithmOIDs.SHA384] = {},
-    [container.digestAlgorithmOIDs.SHA512] = {},
-    [container.digestAlgorithmOIDs.SHA3_224] = {},
-    [container.digestAlgorithmOIDs.SHA3_256] = {},
-    [container.digestAlgorithmOIDs.SHA3_384] = {},
-    [container.digestAlgorithmOIDs.SHA3_512] = {},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA1] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA224] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA256] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA384] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA512] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA3_224] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA3_256] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA3_384] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ECDSA_SHA3_512] = {{"parameters", asn1.null}},
+    [container.signatureAlgorithmOIDs.ED25519] = {{"parameters", asn1.null}},
+    [container.publicKeyAlgorithmOIDs.X25519] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA1] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA224] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA256] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA384] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA512] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA3_224] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA3_256] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA3_384] = {{"parameters", asn1.null}},
+    [container.digestAlgorithmOIDs.SHA3_512] = {{"parameters", asn1.null}},
     [container.encryptionAlgorithmOIDs.AES128_CBC] = {{"iv", asn1.octet_string}},
     [container.encryptionAlgorithmOIDs.AES192_CBC] = {{"iv", asn1.octet_string}},
     [container.encryptionAlgorithmOIDs.AES256_CBC] = {{"iv", asn1.octet_string}},
     [container.encryptionAlgorithmOIDs.ChaCha20_Poly1305] = {{"nonce", asn1.octet_string}},
-    [container.pseudoRandomFunctionOIDs.HMAC_SHA1] = {},
-    [container.pseudoRandomFunctionOIDs.HMAC_SHA224] = {},
-    [container.pseudoRandomFunctionOIDs.HMAC_SHA256] = {},
-    [container.pseudoRandomFunctionOIDs.HMAC_SHA384] = {},
-    [container.pseudoRandomFunctionOIDs.HMAC_SHA512] = {},
-    [container.pseudoRandomFunctionOIDs.HMAC_SHA512_224] = {},
-    [container.pseudoRandomFunctionOIDs.HMAC_SHA512_256] = {},
+    [container.pseudoRandomFunctionOIDs.HMAC_SHA1] = {{"parameters", asn1.null}},
+    [container.pseudoRandomFunctionOIDs.HMAC_SHA224] = {{"parameters", asn1.null}},
+    [container.pseudoRandomFunctionOIDs.HMAC_SHA256] = {{"parameters", asn1.null}},
+    [container.pseudoRandomFunctionOIDs.HMAC_SHA384] = {{"parameters", asn1.null}},
+    [container.pseudoRandomFunctionOIDs.HMAC_SHA512] = {{"parameters", asn1.null}},
+    [container.pseudoRandomFunctionOIDs.HMAC_SHA512_224] = {{"parameters", asn1.null}},
+    [container.pseudoRandomFunctionOIDs.HMAC_SHA512_256] = {{"parameters", asn1.null}},
 }
 
 local AlgorithmIdentifier = asn1.class(algorithm_list)
@@ -856,6 +874,7 @@ local AuthEnvelopedData = asn1.sequence {
 
 ---@class ContentInfo
 ---@field type ObjectIdentifier
+---@field content string|SignedData|EnvelopedData|DigestedData|EncryptedData|AuthenticatedData|AuthEnvelopedData
 
 local ContentInfo = asn1.class {
     [container.pkcs7ContentTypeOIDs.data] = {{"content", asn1.explicit(0, asn1.octet_string)}},
@@ -922,6 +941,85 @@ local PBES2_Params = asn1.sequence {
 algorithm_list[container.keyDerivationAlgorithmOIDs.PBKDF2] = {{"pbkdf2Parameters", PBKDF2_Params}}
 algorithm_list[container.passwordBasedEncryptionSchemeOIDs.PBES2] = {{"pbes2Parameters", PBES2_Params}}
 
+-- PKCS#12 --
+
+---@class DigestInfo
+---@field digestAlgorithm AlgorithmIdentifier
+---@field digest string
+
+local DigestInfo = asn1.sequence {
+    {"digestAlgorithm", AlgorithmIdentifier},
+    {"digest", asn1.octet_string}
+}
+
+---@class MacData
+---@field mac DigestInfo
+---@field macSalt string
+---@field iterations number
+
+local MacData = asn1.sequence {
+    {"mac", DigestInfo},
+    {"macSalt", asn1.octet_string},
+    {"iterations", asn1.default(asn1.integer, 1)}
+}
+
+---@class PFX
+---@field version number
+---@field authSafe ContentInfo
+---@field macData MacData|nil
+---@field pdus AuthenticatedSafe|nil
+
+local PFX = asn1.sequence {
+    {"version", asn1.integer},
+    {"authSafe", ContentInfo},
+    {"macData", asn1.optional(MacData)}
+}
+
+---@class CertBag
+---@field type ObjectIdentifier
+---@field certValue string
+
+local CertBag = asn1.class {
+    [container.pkcs12CertTypeOIDs.x509Certificate] = {{"certValue", asn1.explicit(0, asn1.octet_string)}},
+    [container.pkcs12CertTypeOIDs.sdsiCertificate] = {{"certValue", asn1.explicit(0, asn1.ia5string)}},
+}
+
+---@class CRLBag
+---@field type ObjectIdentifier
+---@field crltValue string
+
+local CRLBag = asn1.class {
+    [container.pkcs12CRLTypeOIDs.x509Certificate] = {{"crltValue", asn1.explicit(0, asn1.octet_string)}},
+}
+
+---@class SecretBag
+---@field type ObjectIdentifier
+---@field secretValue nil
+
+local SecretBag = asn1.class {
+
+}
+
+---@alias AuthenticatedSafe ContentInfo[]
+
+local AuthenticatedSafe = asn1.sequence_of(ContentInfo)
+
+---@class SafeBag
+---@field type ObjectIdentifier
+---@field bagValue PrivateKeyInfo|EncryptedPrivateKeyInfo|CertBag|CRLBag|SecretBag
+---@field bagAttributes Attribute[]|nil
+
+local safeBagTypes = {
+    [container.pkcs12BagTypeOIDs.keyBag] = {{"bagValue", asn1.explicit(0, PrivateKeyInfo)}, {"bagAttributes", asn1.optional(asn1.set_of(Attribute))}},
+    [container.pkcs12BagTypeOIDs.pkcs8ShroudedKeyBag] = {{"bagValue", asn1.explicit(0, EncryptedPrivateKeyInfo)}, {"bagAttributes", asn1.optional(asn1.set_of(Attribute))}},
+    [container.pkcs12BagTypeOIDs.certBag] = {{"bagValue", asn1.explicit(0, CertBag)}, {"bagAttributes", asn1.optional(asn1.set_of(Attribute))}},
+    [container.pkcs12BagTypeOIDs.crlBag] = {{"bagValue", asn1.explicit(0, CRLBag)}, {"bagAttributes", asn1.optional(asn1.set_of(Attribute))}},
+    [container.pkcs12BagTypeOIDs.secretBag] = {{"bagValue", asn1.explicit(0, SecretBag)}, {"bagAttributes", asn1.optional(asn1.set_of(Attribute))}},
+}
+local SafeBag = asn1.class(safeBagTypes)
+
+safeBagTypes[container.pkcs12BagTypeOIDs.safeContentsBag] = {{"bagValue", asn1.sequence_of(SafeBag)}, {"bagAttributes", asn1.optional(asn1.set_of(Attribute))}}
+
 -- End ASN.1 definitions --
 
 --- Decodes a PEM file to DER data.
@@ -978,8 +1076,21 @@ function container.loadPKCS10(data)
     return CertificationRequest.decode(data)
 end
 
+--- Loads a PKCS#12 file from DER.
+---@param data string The DER to load
+---@return PFX p12 The loaded PKCS#12 structure
 function container.loadPKCS12(data)
+    local pfx = PFX.decode(data)
+    if (pfx.authSafe.type.string or pfx.authSafe.type) == container.pkcs7ContentTypeOIDs.data then pfx.pdus = AuthenticatedSafe.decode(pfx.authSafe.content)
+    elseif (pfx.authSafe.type.string or pfx.authSafe.type) == container.pkcs7ContentTypeOIDs.signedData then pfx.pdus = AuthenticatedSafe.decode(pfx.authSafe.content.encapContentInfo.eContent) end
+    return pfx
+end
 
+--- Loads PKCS#12 SafeContents from DER.
+---@param data string The DER to load
+---@return SafeBag[] safebag The loaded PKCS#12 SafeContents
+function container.loadPKCS12SafeContents(data)
+    return asn1.sequence_of(SafeBag).decode(data)
 end
 
 --- Loads a X.509 file from DER.
@@ -1040,8 +1151,18 @@ function container.savePKCS10(pk10)
     return CertificationRequest.encode(pk10)
 end
 
+--- Encodes a PKCS#12 structure to DER.
+---@param pk12 PFX The structure to encode
+---@return string der The DER representation
 function container.savePKCS12(pk12)
+    return PFX.encode(pk12)
+end
 
+--- Encodes PKCS#12 SafeContents to DER.
+---@param safebag SafeBag[] The SafeContents to encode
+---@return string der The DER representation
+function container.savePKCS12SafeContents(safebag)
+    return asn1.sequence_of(SafeBag).encode(safebag)
 end
 
 --- Encodes the X.509 certificate's to be signed contents to DER.
@@ -1058,6 +1179,25 @@ function container.saveX509(cert)
     return Certificate.encode(cert)
 end
 
+local dnCodes = {
+    [container.nameOIDs.countryName] = "C",
+    [container.nameOIDs.commonName] = "CN",
+    [container.nameOIDs.domainComponent] = "DC",
+    [container.nameOIDs.emailAddress] = "E",
+    [container.nameOIDs.emailAddress] = "EMAIL",
+    [container.nameOIDs.emailAddress] = "EMAILADDRESS",
+    [container.nameOIDs.localityName] = "L",
+    [container.nameOIDs.organizationName] = "O",
+    [container.nameOIDs.organizationalUnitName] = "OU",
+    [container.nameOIDs.postalCode] = "PC",
+    [container.nameOIDs.stateOrProvinceName] = "S",
+    [container.nameOIDs.surname] = "SN",
+    [container.nameOIDs.stateOrProvinceName] = "SP",
+    [container.nameOIDs.stateOrProvinceName] = "ST",
+    [container.nameOIDs.streetAddress] = "STREET",
+    [container.nameOIDs.title] = "T"
+}
+
 --- Prints an arbitrary object to the screen.
 ---@param cert table The table to print
 ---@param level? number The indentation level (defaults to 0)
@@ -1066,8 +1206,16 @@ function container.print(cert, level)
     for k, v in pairs(cert) do
         io.write(("  "):rep(level) .. (type(k) == "string" and k:gsub("%f[A-Z]([A-Z])", " %1"):gsub("^%w", string.upper) or k) .. ": ")
         if type(v) == "table" and type(v.type) ~= "string" then
-            io.write("\n")
-            container.print(v, level + 1)
+            if v.rdnSequence then
+                local seq = {}
+                for _, w in ipairs(v.rdnSequence) do
+                    seq[#seq+1] = (dnCodes[w[1].type.string or w[1].type] or w[1].type.string or w[1].type) .. "=" .. (w[1].value.uTF8String or tostring(w[1].value))
+                end
+                io.write(table.concat(seq, ",") .. "\n")
+            else
+                io.write("\n")
+                container.print(v, level + 1)
+            end
         elseif type(v) == "table" then
             if v.type == "INTEGER" then
                 --[[if #v.data == 0 then io.write("0\n") else
