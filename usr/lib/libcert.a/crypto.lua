@@ -1,5 +1,6 @@
-local container = require "container"
-local algorithms = require "algorithms"
+local expect = require "system.expect"
+local algorithms = require "cert.algorithms"
+local container = require "cert.container"
 local util = require "cert.util"
 local random = require "ccryptolib.random"
 local sha2 = require "sha2"
@@ -15,6 +16,10 @@ local crypto = {}
 ---@param algorithm? string The OID of the algorithm to encrypt the key with (defaults to AES256_CBC)
 ---@return KeyEncryptor encryptor The created key encryptor
 function crypto.exchangedKey(pk8, origCert, recvCert, algorithm)
+    expect(1, pk8, "table")
+    expect(2, origCert, "table")
+    expect(3, recvCert, "table")
+    expect(4, algorithm, "string", "nil")
     if algorithm then assert(algorithms.encryption[algorithm], "Unsupported encryption type") end
     local skt = pk8.privateKeyAlgorithm.type.string or pk8.privateKeyAlgorithm.type
     local sct = origCert.toBeSigned.subjectPublicKeyInfo.algorithm.type.string or origCert.toBeSigned.subjectPublicKeyInfo.algorithm.type
@@ -80,6 +85,9 @@ end
 ---@param algorithm? string The OID for the algorithm to encrypt the key with (defaults to an AES picked by key length)
 ---@return KeyEncryptor encryptor The created key encryptor
 function crypto.sharedKey(psk, id, algorithm)
+    expect(1, psk, "string")
+    expect(2, id, "string")
+    expect(3, algorithm, "string", "nil")
     local pkt = algorithm
     if not pkt then
         if #psk == 16 then pkt = container.encryptionAlgorithmOIDs.AES128_CBC
@@ -123,6 +131,10 @@ end
 ---@param encryptionAlgorithm? string The OID of the algorithm to use to encrypt the key (defaults to AES256_CBC)
 ---@return KeyEncryptor encryptor The created key encryptor
 function crypto.passwordKey(password, hashAlgorithm, iter, encryptionAlgorithm)
+    expect(1, password, "string")
+    expect(2, hashAlgorithm, "string", "nil")
+    expect(3, iter, "number", "nil")
+    expect(4, encryptionAlgorithm, "string", "nil")
     hashAlgorithm = hashAlgorithm or container.pseudoRandomFunctionOIDs.HMAC_SHA256
     encryptionAlgorithm = encryptionAlgorithm or container.encryptionAlgorithmOIDs.AES256_CBC
     assert(algorithms.pseudoRandomFunctions[hashAlgorithm], "Unsupported pseudorandom function")
@@ -176,10 +188,12 @@ end
 --- This may use either an EnvelopedData or AuthEnvelopedData container depending
 --- on the selected algorithm.
 ---@param data string|PKCS7 The data to encrypt
----@param algorithm? string|KeyEncryptor (Optional) The algorithm to use to encrypt (defaults to ChaCha20_Poly1305)
+---@param algorithm string|KeyEncryptor The algorithm to use to encrypt (defaults to ChaCha20_Poly1305), or the first encryptor
 ---@param ... KeyEncryptor The key encryptor(s) to encrypt with
 ---@return PKCS7 pk7 The generated PKCS#7 container
 function crypto.encrypt(data, algorithm, ...)
+    expect(1, data, "string", "table")
+    expect(2, algorithm, "string", "table")
     local ctype = container.pkcs7ContentTypeOIDs.data
     if type(data) == "table" then
         ctype = data.type.string or data.type
@@ -188,9 +202,8 @@ function crypto.encrypt(data, algorithm, ...)
     local keyEncryptors = {...}
     if type(algorithm) == "table" then
         table.insert(keyEncryptors, 1, algorithm)
-        algorithm = nil
+        algorithm = container.encryptionAlgorithmOIDs.ChaCha20_Poly1305
     end
-    algorithm = algorithm or container.encryptionAlgorithmOIDs.ChaCha20_Poly1305
     local pk7, key
     if algorithms.authenticatedEncryption[algorithm] then
         key = random.random(algorithms.authenticatedEncryption[algorithm].keySize)
@@ -239,6 +252,7 @@ end
 ---@param ... KeyEncryptor|string The key encryptor(s) to decrypt with, or for an EncryptedData container, a string with the password
 ---@return string|PKCS7 data The decrypted data
 function crypto.decrypt(pk7, ...)
+    expect(1, pk7, "table")
     local ctype = pk7.type.string or pk7.type
     if ctype == container.pkcs7ContentTypeOIDs.authEnvelopedData then
         local key
@@ -309,6 +323,11 @@ function crypto.encryptKey(pk8, password, hashAlgorithm, iter, encryptionAlgorit
         end
         if type(hashAlgorithm) == "function" then error("Unknown hashing algorithm - hasher functions are deprecated, use an OID instead", 2) end
     end
+    expect(1, pk8, "table")
+    expect(2, password, "string")
+    expect(3, hashAlgorithm, "string", "nil")
+    expect(4, iter, "number", "nil")
+    expect(5, encryptionAlgorithm, "string", "nil")
     hashAlgorithm = hashAlgorithm or container.pseudoRandomFunctionOIDs.HMAC_SHA256
     encryptionAlgorithm = encryptionAlgorithm or container.encryptionAlgorithmOIDs.AES256_CBC
     assert(algorithms.pseudoRandomFunctions[hashAlgorithm], "Unsupported pseudorandom function")
@@ -347,6 +366,8 @@ end
 ---@param password string The password to decrypt with
 ---@return PKCS8 pk8 The decrypted key
 function crypto.decryptKey(pk8e, password)
+    expect(1, pk8e, "table")
+    expect(2, password, "string")
     local ht = pk8e.encryptionAlgorithm.pbes2Parameters.keyDerivationFunc.pbkdf2Parameters.prf.type
     local et = pk8e.encryptionAlgorithm.pbes2Parameters.encryptionScheme.type
     if type(ht) == "table" then ht = ht.string end

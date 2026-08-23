@@ -1,5 +1,5 @@
-local container = require "container"
-local chain = require "chain"
+local expect = require "system.expect"
+local container = require "cert.container"
 local util = require "cert.util"
 local sha2 = require "sha2"
 local ed25519 = require "ccryptolib.ed25519"
@@ -14,6 +14,11 @@ local signature = {}
 ---@param embedData? boolean Whether to embed the signed data in the signature structure (defaults to false)
 ---@return PKCS7SignedData pk7 The generated signature
 function signature.sign(cert, key, data, additionalCerts, embedData)
+    expect(1, cert, "table")
+    expect(2, key, "table")
+    expect(3, data, "string", "table")
+    expect(4, additionalCerts, "table", "nil")
+    expect(5, embedData, "boolean", "nil")
     local ct = container.pkcs7ContentTypeOIDs.data
     if type(data) == "table" then
         ct = data.type
@@ -93,6 +98,8 @@ end
 ---@param i number The index of the signed data to check
 ---@return X509|nil The certificate that signed that data, or nil if not found
 function signature.getCertificate(pk7, i)
+    expect(1, pk7, "table")
+    expect(2, i, "number")
     local issuerName = util.reduceName(pk7.content.signerInfos[i].sid.issuerAndSerialNumber.issuer)
     for _, c in ipairs(pk7.content.certificates) do
         local name = util.reduceName(c.toBeSigned.issuer)
@@ -110,6 +117,9 @@ end
 ---@return boolean valid Whether the signature is valid
 ---@return string|table reasonOrData If not valid, a reason why it's invalid; if valid, the data that was verified
 function signature.verify(pk7, data, index)
+    expect(1, pk7, "table")
+    expect(2, data, "string", "nil")
+    expect(3, index, "number", "nil")
     index = index or 1
     if pk7.type.string ~= container.pkcs7ContentTypeOIDs.signedData then return false, "PKCS#7 block is not signed data" end
     if pk7.content.digestAlgorithms[1].type.string ~= container.digestAlgorithmOIDs.SHA3_512 then return false, "Unsupported digest algorithm" end

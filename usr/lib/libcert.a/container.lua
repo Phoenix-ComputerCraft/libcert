@@ -1027,6 +1027,7 @@ safeBagTypes[container.pkcs12BagTypeOIDs.safeContentsBag] = {{"bagValue", asn1.s
 ---@return string der The DER data
 ---@return string type The type of the data as defined in the ASCII armor
 function container.decodePEM(data)
+    expect(1, data, "string")
     local type = data:match("^%-%-%-%-%-BEGIN ([^%-]+)")
     local retval = serialization.base64.decode(data:match("%-%-%-%-%-BEGIN [^%-]+%-%-%-%-%-\n(.+)\n%-%-%-%-%-END [^%-]+%-%-%-%-%-"):gsub("[^A-Za-z0-9/+=]", ""))
     return retval, type
@@ -1037,6 +1038,8 @@ end
 ---@param type string The type of the PEM block
 ---@return string pem The PEM data
 function container.encodePEM(data, type)
+    expect(1, data, "string")
+    expect(2, type, "string")
     return ([[-----BEGIN %s-----
 %s
 -----END %s-----
@@ -1047,6 +1050,7 @@ end
 ---@param data string The DER to load
 ---@return PKCS7 pk7 The loaded PKCS#7 structure
 function container.loadPKCS7(data)
+    expect(1, data, "string")
     local pk7 = ContentInfo.decode(data)
     return pk7
 end
@@ -1055,6 +1059,7 @@ end
 ---@param data string The DER to load
 ---@return PKCS8 pk8 The loaded PKCS#8 structure
 function container.loadPKCS8(data)
+    expect(1, data, "string")
     local pk8 = PrivateKeyInfo.decode(data)
     if pk8.privateKeyAlgorithm.type.string == container.publicKeyAlgorithmOIDs.ED25519 then
         pk8.privateKey = asn1.octet_string.decode(pk8.privateKey)
@@ -1066,6 +1071,7 @@ end
 ---@param data string The DER to load
 ---@return EncryptedPrivateKeyInfo pk8 The loaded encrypted PKCS#8 structure
 function container.loadPKCS8Encrypted(data)
+    expect(1, data, "string")
     return EncryptedPrivateKeyInfo.decode(data)
 end
 
@@ -1073,6 +1079,7 @@ end
 ---@param data string The DER to load
 ---@return PKCS10 pk10 The loaded PKCS#10 structure
 function container.loadPKCS10(data)
+    expect(1, data, "string")
     return CertificationRequest.decode(data)
 end
 
@@ -1080,6 +1087,7 @@ end
 ---@param data string The DER to load
 ---@return PFX p12 The loaded PKCS#12 structure
 function container.loadPKCS12(data)
+    expect(1, data, "string")
     local pfx = PFX.decode(data)
     if (pfx.authSafe.type.string or pfx.authSafe.type) == container.pkcs7ContentTypeOIDs.data then pfx.pdus = AuthenticatedSafe.decode(pfx.authSafe.content)
     elseif (pfx.authSafe.type.string or pfx.authSafe.type) == container.pkcs7ContentTypeOIDs.signedData then pfx.pdus = AuthenticatedSafe.decode(pfx.authSafe.content.encapContentInfo.eContent) end
@@ -1097,6 +1105,7 @@ end
 ---@param data string The DER to load
 ---@return X509 cert The loaded X.509 structure
 function container.loadX509(data)
+    expect(1, data, "string")
     local cert = Certificate.decode(data) ---@type Certificate
     return cert
 end
@@ -1105,6 +1114,7 @@ end
 ---@param pk7 PKCS7 The structure to encode
 ---@return string der The DER representation
 function container.savePKCS7(pk7)
+    expect(1, pk7, "table")
     return ContentInfo.encode(pk7)
 end
 
@@ -1112,6 +1122,7 @@ end
 ---@param attrs Attribute[] The attributes to encode
 ---@return string der The DER encoded form of the attributes
 function container.encodePKCS7SignedAttrs(attrs)
+    expect(1, attrs, "table")
     return asn1.set_of(Attribute).encode(attrs)
 end
 
@@ -1119,6 +1130,7 @@ end
 ---@param pk8 PKCS8 The structure to encode
 ---@return string der The DER representation
 function container.savePKCS8(pk8)
+    expect(1, pk8, "table")
     if (pk8.privateKeyAlgorithm.type.string or pk8.privateKeyAlgorithm.type) == container.publicKeyAlgorithmOIDs.ED25519 then
         return PrivateKeyInfo.encode {
             version = pk8.version,
@@ -1134,6 +1146,7 @@ end
 ---@param pk8 EncryptedPrivateKeyInfo The structure to encode
 ---@return string der The DER representation
 function container.savePKCS8Encrypted(pk8)
+    expect(1, pk8, "table")
     return EncryptedPrivateKeyInfo.encode(pk8)
 end
 
@@ -1141,6 +1154,7 @@ end
 ---@param pk10 PKCS10 The structure to encode
 ---@return string der The DER representation of the inner info
 function container.encodePKCS10InnerInfo(pk10)
+    expect(1, pk10, "table")
     return CertificationRequestInfo.encode(pk10.toBeSigned)
 end
 
@@ -1148,6 +1162,7 @@ end
 ---@param pk10 PKCS10 The structure to encode
 ---@return string der The DER representation
 function container.savePKCS10(pk10)
+    expect(1, pk10, "table")
     return CertificationRequest.encode(pk10)
 end
 
@@ -1155,6 +1170,7 @@ end
 ---@param pk12 PFX The structure to encode
 ---@return string der The DER representation
 function container.savePKCS12(pk12)
+    expect(1, pk12, "table")
     return PFX.encode(pk12)
 end
 
@@ -1162,6 +1178,7 @@ end
 ---@param safebag SafeBag[] The SafeContents to encode
 ---@return string der The DER representation
 function container.savePKCS12SafeContents(safebag)
+    expect(1, safebag, "table")
     return asn1.sequence_of(SafeBag).encode(safebag)
 end
 
@@ -1169,6 +1186,7 @@ end
 ---@param cert X509 The structure to encode
 ---@return string der The DER representation of `toBeSigned`
 function container.encodeX509InnerCertificate(cert)
+    expect(1, cert, "table")
     return TBSCertificate.encode(cert.toBeSigned)
 end
 
@@ -1176,6 +1194,7 @@ end
 ---@param cert X509 The structure to encode
 ---@return string der The DER representation
 function container.saveX509(cert)
+    expect(1, cert, "table")
     return Certificate.encode(cert)
 end
 
@@ -1202,6 +1221,7 @@ local dnCodes = {
 ---@param cert table The table to print
 ---@param level? number The indentation level (defaults to 0)
 function container.print(cert, level)
+    expect(1, cert, "table")
     level = level or 0
     for k, v in pairs(cert) do
         io.write(("  "):rep(level) .. (type(k) == "string" and k:gsub("%f[A-Z]([A-Z])", " %1"):gsub("^%w", string.upper) or k) .. ": ")

@@ -1,13 +1,15 @@
 local expect = require "system.expect"
-local chain = require "chain"
-local container = require "container"
-local crypto = require "crypto"
-local csr = require "csr"
-local signature = require "signature"
+local algorithms = require "cert.algorithms"
+local chain = require "cert.chain"
+local container = require "cert.container"
+local crypto = require "cert.crypto"
+local csr = require "cert.csr"
+local signature = require "cert.signature"
 local random = require "ccryptolib.random"
 local sha2 = require "sha2"
 
 local libcert = {
+    algorithms = algorithms,
     chain = chain,
     container = container,
     crypto = crypto,
