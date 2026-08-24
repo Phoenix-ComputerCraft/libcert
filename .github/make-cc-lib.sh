@@ -99,5 +99,4 @@ done;
 sed 's/system.expect/cc.expect/g' libcert/usr/lib/libcert.a/init.lua >> cert.lua;
 
 # minify
-luamin -f cert.lua > cert.min.lua;
-exit 0;
+luamin < cert.lua > cert.min.lua;

@@ -30,7 +30,7 @@ jobs:
         run: sudo apt-get install nodejs npm && sudo npm install -g luamin
 
       # Runs a single command using the runners shell
-      - name: Run a one-line script
+      - name: Pack libraries
         run: .github/make-cc-lib.sh
 
       - uses: actions/upload-artifact@v7
