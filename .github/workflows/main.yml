@@ -1,0 +1,59 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Build CraftOS library
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the $default-branch branch
+  push:
+    branches: [ $default-branch ]
+  release:
+    types: [published]
+    branches: [ $default-branch ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: .github/make-cc-lib.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cert.lua
+          path: cert.lua
+          if-no-files-found: error
+          archive: false
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cert.min.lua
+          path: cert.min.lua
+          if-no-files-found: error
+          archive: false
+
+      - uses: shogo82148/actions-upload-release-asset@v1.6.3
+        if: github.event_name == 'release'
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: cert.lua
+          asset_name: cert.lua
+
+      - uses: shogo82148/actions-upload-release-asset@v1.6.3
+        if: github.event_name == 'release'
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: cert.min.lua
+          asset_name: cert.min.lua
