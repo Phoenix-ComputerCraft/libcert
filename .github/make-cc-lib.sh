@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # clone repo + dependencies
 git clone https://github.com/Phoenix-ComputerCraft/libcert;
