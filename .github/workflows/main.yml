@@ -26,6 +26,9 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: sudo apt install nodejs npm && sudo npm install -g luamin
+
       # Runs a single command using the runners shell
       - name: Run a one-line script
         run: .github/make-cc-lib.sh
